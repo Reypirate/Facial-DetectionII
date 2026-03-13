@@ -3,10 +3,13 @@ import dynamic from "next/dynamic";
 const FaceDetection = dynamic(() => import("@/components/FaceDetection"), {
     ssr: false,
     loading: () => (
-        <div className="flex items-center justify-center w-[640px] h-[480px] bg-zinc-800 rounded-xl border-2 border-zinc-700">
-            <div className="text-center">
-                <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-zinc-400 font-mono text-sm">Loading AI Vision...</p>
+        <div className="relative w-full max-w-[640px] aspect-[4/3] bg-zinc-900/50 backdrop-blur-md rounded-xl border border-white/5 flex flex-col items-center justify-center overflow-hidden">
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+            
+            <div className="relative z-10 text-center">
+                <div className="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mx-auto mb-4 box-shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                <p className="text-emerald-400/80 font-mono text-sm tracking-widest animate-pulse">BOOTING AI CORE...</p>
             </div>
         </div>
     ),

@@ -98,26 +98,6 @@ export default function FaceDetection() {
         });
     }, []);
 
-    // ── Status text ─────────────────────────────────────────────────────
-    const getStatusText = () => {
-        if (cameraError) return "⚠️ Camera denied. Allow permissions & refresh.";
-        if (!cameraReady) return "Initializing camera...";
-        
-        const parts = [];
-        if (faceModelsReady) parts.push("Face");
-        if (handModelsReady) parts.push("Hand");
-        if (objectModelReady) parts.push("Object");
-
-        if (parts.length === 0) {
-            return "📷 Camera active. Loading AI models...";
-        } else if (parts.length < 3) {
-            return `✅ ${parts.join(" + ")} AI ready. Loading others...`;
-        } else {
-            return "✅ All AI Ready — Detecting faces, hands & objects";
-        }
-    };
-    const status = getStatusText();
-
     const handleRegisterFace = () => {
         if (!registerName.trim()) {
             setRegisterStatus("⚠️ Enter a name first!");
@@ -153,11 +133,11 @@ export default function FaceDetection() {
     const areAllModelsLoading = cameraReady && (!faceModelsReady || !handModelsReady || !objectModelReady);
     
     // Dynamic border for recording tab
-    let videoBorderClass = "border-emerald-500/50 shadow-emerald-500/20";
+    let videoBorderClass = "border-white/10";
     if (activeTab === "register") {
         videoBorderClass = isRegistrationReady 
-            ? "border-green-500 shadow-green-500/40" 
-            : "border-red-500/50 shadow-red-500/20";
+            ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.3)]" 
+            : "border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]";
     }
 
     const TABS: { id: TabId; label: string; emoji: string }[] = [
@@ -168,202 +148,234 @@ export default function FaceDetection() {
 
     if (cameraError) {
         return (
-            <div className="flex flex-col items-center justify-center w-full max-w-[640px] h-[480px] bg-zinc-900 rounded-xl border border-red-500/50 text-center p-6 shadow-2xl shadow-red-500/10">
-                <p className="text-4xl mb-4">📷</p>
-                <h2 className="text-red-400 font-bold mb-2 font-mono">Camera Permission Denied</h2>
-                <p className="text-zinc-400 text-sm mb-6">
-                    Please allow access to your camera in your browser settings to use the AI detection features.
+            <div className="flex flex-col items-center justify-center w-full max-w-[800px] aspect-[4/3] bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-red-500/30 text-center p-6 shadow-[0_0_50px_rgba(239,68,68,0.1)]">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                    <p className="text-4xl animate-bounce">📷</p>
+                </div>
+                <h2 className="text-red-400 font-bold mb-3 font-mono text-xl tracking-tight">Camera Permission Denied</h2>
+                <p className="text-zinc-400 text-sm mb-8 max-w-sm leading-relaxed">
+                    AI Vision Studio requires camera access to process local models. Please allow permissions in your browser.
                 </p>
                 <button
                     onClick={retryCamera}
-                    className="px-6 py-3 bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30 rounded-lg transition-all font-mono text-sm uppercase tracking-wider"
+                    className="px-8 py-3 bg-red-500/10 text-red-400 border border-red-500/50 hover:bg-red-500/20 rounded-xl transition-all font-mono text-sm uppercase tracking-widest font-bold"
                 >
-                    Retry Camera
+                    Retry Connection
                 </button>
             </div>
         );
     }
 
+    // ── Status Indicator ──
+    const renderStatusIndicator = () => {
+        if (!cameraReady) {
+            return (
+                <div className="flex items-center gap-3">
+                    <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                    </span>
+                    <span className="text-yellow-400 font-mono text-xs font-bold tracking-wider">CAMERA BOOT</span>
+                </div>
+            );
+        }
+        if (areAllModelsLoading) {
+            return (
+                <div className="flex items-center gap-3">
+                    <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                    </span>
+                    <span className="text-yellow-400 font-mono text-xs font-bold tracking-wider">LOADING AI CORE</span>
+                </div>
+            );
+        }
+        return (
+            <div className="flex items-center gap-3">
+                <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span className="text-emerald-400 font-mono text-xs font-bold tracking-wider">SYSTEM ACTIVE</span>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col items-center w-full">
             {/* AI Model Scripts */}
-            <Script
-                src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"
-                strategy="lazyOnload"
-                onLoad={onFaceApiLoad}
-            />
-            <Script
-                src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"
-                strategy="lazyOnload"
-                onLoad={() => {
-                    // Start COCO-SSD load request after tf loads
-                    const cocoScript = document.createElement("script");
-                    cocoScript.src = "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js";
-                    cocoScript.onload = onCocoSsdLoad;
-                    document.head.appendChild(cocoScript);
-                }}
-            />
-            <Script
-                src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"
-                strategy="lazyOnload"
-                crossOrigin="anonymous"
-                onLoad={onHandsLoad}
-            />
+            <Script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" strategy="lazyOnload" onLoad={onFaceApiLoad} />
+            <Script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js" strategy="lazyOnload" onLoad={() => {
+                const cocoScript = document.createElement("script");
+                cocoScript.src = "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js";
+                cocoScript.onload = onCocoSsdLoad;
+                document.head.appendChild(cocoScript);
+            }} />
+            <Script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" strategy="lazyOnload" crossOrigin="anonymous" onLoad={onHandsLoad} />
 
-            {/* Tab bar */}
-            <div className="flex gap-1 mb-4 bg-zinc-800/60 p-1 rounded-xl border border-zinc-700">
-                {TABS.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${
-                            activeTab === tab.id
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50"
-                                : "text-zinc-500 hover:text-zinc-300 border border-transparent"
-                        }`}
-                    >
-                        {tab.emoji} {tab.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* Camera view */}
-            <div className={`relative rounded-xl overflow-hidden border-2 shadow-2xl transition-all duration-300 ${videoBorderClass}`}>
+            {/* Main Stage */}
+            <div className={`relative w-full max-w-[800px] aspect-[4/3] rounded-2xl overflow-hidden border shadow-2xl transition-all duration-500 bg-black ${videoBorderClass}`}>
+                
+                {/* Video Feed */}
                 <video
                     ref={videoRef}
-                    width={640}
-                    height={480}
                     muted
                     playsInline
-                    className="rounded-xl bg-black"
+                    className="absolute inset-0 w-full h-full object-cover"
                     style={{ transform: "scaleX(-1)" }}
                 />
                 <canvas
                     ref={canvasRef}
-                    className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                     style={{ transform: "scaleX(-1)" }}
                 />
-                
-                {/* Visual initial loading state indicator overlay */}
-                {areAllModelsLoading && (
-                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm z-10 transition-opacity">
-                        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
-                        <span className="text-emerald-400 font-mono text-sm tracking-widest animate-pulse">LOADING AI ENGINES...</span>
-                    </div>
-                )}
 
-                {/* Scan line */}
-                <div className="absolute top-0 left-0 w-full h-full pointer-events-none border border-emerald-500/20 rounded-xl">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent animate-pulse" />
-                </div>
-                {/* Paused overlay */}
-                {detectionPaused && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
-                        <span className="text-4xl font-bold text-yellow-400 animate-pulse">⏸ PAUSED</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Status */}
-            <div className="mt-3 px-4 py-2 bg-zinc-800/80 border border-zinc-700 rounded-lg">
-                <p className="text-emerald-400 font-mono text-sm">{status}</p>
-            </div>
-
-            {/* Legend */}
-            <div className="mt-2 flex gap-4 text-xs font-mono">
-                <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[#00ff88]" /> Face
-                </span>
-                <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[#ff00ff]" /> Hand
-                </span>
-                <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-[#00ddff]" /> Object
-                </span>
-            </div>
-
-            {/* Tab content */}
-            {activeTab === "detection" && (
-                <Dashboard
-                    faceCount={faceCount}
-                    handCount={handCount}
-                    objectCount={objectCount}
-                    fps={fps}
-                    topExpression={topExpression}
-                    topGesture={topGesture}
-                    emotionHistory={emotionHistory}
-                    soundEnabled={soundEnabled}
-                    onToggleSound={handleToggleSound}
-                    detectionPaused={detectionPaused}
-                />
-            )}
-
-            {activeTab === "photobooth" && (
-                <Photobooth videoRef={videoRef} canvasRef={canvasRef} />
-            )}
-
-            {activeTab === "register" && (
-                <div className="w-full max-w-[640px] mt-4 space-y-3">
-                    <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 transition-colors">
-                        <p className="text-zinc-500 text-[10px] font-mono uppercase mb-2">
-                            Register Your Face
-                        </p>
-                        <p className="text-zinc-400 text-xs mb-3">
-                            Look at the camera and enter your name. Once registered, the app will
-                            show your name instead of "HUMAN". The frame will glow green when ready to register.
-                        </p>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={registerName}
-                                onChange={(e) => setRegisterName(e.target.value)}
-                                placeholder="Your name..."
-                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
-                            />
+                {/* Top Nav (Hovering) */}
+                <div className="absolute top-4 inset-x-4 z-30 flex justify-between items-start pointer-events-none">
+                    {/* Tab Bar */}
+                    <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-1 flex gap-1 shadow-lg">
+                        {TABS.map((tab) => (
                             <button
-                                onClick={handleRegisterFace}
-                                disabled={!isRegistrationReady}
-                                className={`px-4 py-2 font-bold rounded-lg text-sm transition-all ${
-                                    isRegistrationReady 
-                                        ? "bg-emerald-500 text-black hover:bg-emerald-400" 
-                                        : "bg-zinc-700 text-zinc-500 cursor-not-allowed"
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2 rounded-lg text-xs font-mono transition-all font-bold ${
+                                    activeTab === tab.id
+                                        ? "bg-emerald-500/20 text-emerald-400 shadow-[inset_0_0_10px_rgba(16,185,129,0.2)]"
+                                        : "text-zinc-500 hover:text-zinc-300"
                                 }`}
                             >
-                                Register
+                                {tab.emoji} <span className="hidden sm:inline-block ml-1">{tab.label}</span>
                             </button>
-                        </div>
-                        {registerStatus && (
-                            <p className="mt-2 text-sm font-mono text-emerald-400">{registerStatus}</p>
-                        )}
+                        ))}
                     </div>
 
-                    {savedFaces.length > 0 && (
-                        <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3">
-                            <p className="text-zinc-500 text-[10px] font-mono uppercase mb-2">
-                                Saved Faces ({savedFaces.length})
-                            </p>
-                            <div className="space-y-1">
-                                {savedFaces.map((f, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center justify-between border border-zinc-700 rounded-lg px-3 py-1.5"
-                                    >
-                                        <span className="text-white font-mono text-sm">
-                                            🏷️ {f.name}
-                                        </span>
+                    {/* Status Pill */}
+                    <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2.5 shadow-lg">
+                        {renderStatusIndicator()}
+                    </div>
+                </div>
+
+                {/* Center Loading State */}
+                {areAllModelsLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/60 backdrop-blur-sm pointer-events-none">
+                        <div className="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]" />
+                    </div>
+                )}
+
+                {/* Scan line effect */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="w-full h-1 bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent animate-pulse" />
+                </div>
+                
+                {/* Paused Overlay */}
+                {detectionPaused && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-20 pointer-events-none">
+                        <span className="text-4xl font-bold font-mono text-yellow-400 tracking-widest drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]">PAUSED</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Controls Area (Moved outside camera view) */}
+            <div className="w-full max-w-[800px] mt-4 flex flex-col items-center justify-end z-30">
+                <div className="w-full overflow-y-auto no-scrollbar rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg transition-all p-5">
+                    
+                    {activeTab === "detection" && (
+                            <Dashboard
+                                faceCount={faceCount}
+                                handCount={handCount}
+                                objectCount={objectCount}
+                                fps={fps}
+                                topExpression={topExpression}
+                                topGesture={topGesture}
+                                emotionHistory={emotionHistory}
+                                soundEnabled={soundEnabled}
+                                onToggleSound={handleToggleSound}
+                                detectionPaused={detectionPaused}
+                            />
+                        )}
+
+                        {activeTab === "photobooth" && (
+                            <Photobooth videoRef={videoRef} canvasRef={canvasRef} />
+                        )}
+
+                        {activeTab === "register" && (
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-zinc-500 text-[10px] font-mono uppercase mb-1 tracking-widest font-bold">
+                                        Identity Registration
+                                    </p>
+                                    <p className="text-zinc-400 text-xs mb-4 leading-relaxed">
+                                        Face the camera center. The frame pulses <span className="text-emerald-400 font-bold">green</span> when your face is locked on. Enter an alias to train the local recognition net.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={registerName}
+                                            onChange={(e) => setRegisterName(e.target.value)}
+                                            placeholder="Enter classification alias..."
+                                            className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-white/5 transition-all outline-none placeholder:text-zinc-600"
+                                        />
                                         <button
-                                            onClick={() => handleDeleteFace(f.name)}
-                                            className="text-red-400 hover:text-red-300 text-xs font-mono"
+                                            onClick={handleRegisterFace}
+                                            disabled={!isRegistrationReady}
+                                            className={`px-6 py-2.5 font-bold font-mono rounded-xl text-sm transition-all tracking-wide ${
+                                                isRegistrationReady 
+                                                    ? "bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:bg-emerald-400" 
+                                                    : "bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5"
+                                            }`}
                                         >
-                                            ✕ Remove
+                                            ENROLL
                                         </button>
                                     </div>
-                                ))}
+                                    {registerStatus && (
+                                        <p className="mt-3 text-xs font-mono text-emerald-400 flex items-center gap-2">
+                                            {registerStatus}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {savedFaces.length > 0 && (
+                                    <div className="pt-4 border-t border-white/10">
+                                        <p className="text-zinc-500 text-[10px] font-mono uppercase mb-3 tracking-widest font-bold">
+                                            Active Profiles Database ({savedFaces.length})
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {savedFaces.map((f, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl px-3 py-2"
+                                                >
+                                                    <span className="text-zinc-300 font-mono text-xs font-bold truncate pr-3">
+                                                        {f.name}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleDeleteFace(f.name)}
+                                                        className="text-red-400/70 hover:text-red-400 text-[10px] uppercase font-mono tracking-widest shrink-0"
+                                                    >
+                                                        Purge
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            )}
+
+            {/* Legend Below the controls */}
+            <div className="mt-4 flex gap-6 px-4 py-2 bg-black/30 backdrop-blur-md rounded-full border border-white/5 text-[10px] font-mono tracking-widest uppercase font-bold text-zinc-500">
+                <span className="flex items-center gap-2 transition-colors hover:text-emerald-400">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#00ff88]" /> Face Net
+                </span>
+                <span className="flex items-center gap-2 transition-colors hover:text-cyan-400">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#00bbff]" /> Gesture Net
+                </span>
+                <span className="flex items-center gap-2 transition-colors hover:text-orange-400">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#ff9f43]" /> Object Net
+                </span>
+            </div>
         </div>
     );
 }

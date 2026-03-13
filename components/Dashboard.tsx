@@ -32,68 +32,72 @@ export default function Dashboard({
     const recentEmotions = emotionHistory.slice(-20);
 
     return (
-        <div className="w-full max-w-[640px] mt-4 space-y-3">
+        <div className="w-full space-y-4">
             {/* Stats Row */}
-            <div className="grid grid-cols-4 gap-2">
-                <StatCard label="Faces" value={faceCount} color={COLORS.face} />
-                <StatCard label="Hands" value={handCount} color={COLORS.hand} />
-                <StatCard label="Objects" value={objectCount} color={COLORS.object} />
-                <StatCard label="FPS" value={fps} color="#888" />
+            <div className="grid grid-cols-4 gap-3">
+                <StatCard label="FACES" value={faceCount} color={COLORS.face} />
+                <StatCard label="HANDS" value={handCount} color={COLORS.hand} />
+                <StatCard label="OBJECTS" value={objectCount} color={COLORS.object} />
+                <StatCard label="FPS" value={fps} color="#cbd5e1" />
             </div>
 
             {/* Current detections */}
-            <div className="grid grid-cols-2 gap-2">
-                <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2">
-                    <p className="text-zinc-500 text-[10px] font-mono uppercase">Expression</p>
-                    <p className="text-white font-mono text-sm truncate">{topExpression || "—"}</p>
+            <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex flex-col justify-center">
+                    <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-widest font-bold mb-1">Top Expression</p>
+                    <p className="text-white font-mono text-sm truncate font-bold tracking-wide">{topExpression || "UNKNOWN"}</p>
                 </div>
-                <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2">
-                    <p className="text-zinc-500 text-[10px] font-mono uppercase">Gesture</p>
-                    <p className="text-white font-mono text-sm truncate">{topGesture || "—"}</p>
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex flex-col justify-center">
+                    <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-widest font-bold mb-1">Top Gesture</p>
+                    <p className="text-white font-mono text-sm truncate font-bold tracking-wide">{topGesture || "NONE WAIT"}</p>
                 </div>
             </div>
 
             {/* Emotion Timeline */}
             {recentEmotions.length > 0 && (
-                <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2">
-                    <p className="text-zinc-500 text-[10px] font-mono uppercase mb-1">Emotion Timeline</p>
-                    <div className="flex items-end gap-[2px] h-8">
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                    <p className="text-zinc-500 text-[10px] font-mono uppercase mb-3 tracking-widest font-bold">Emotion Telemetry</p>
+                    <div className="flex items-end gap-[4px] h-10 w-full rounded-md overflow-hidden bg-black/20 p-1">
                         {recentEmotions.map((e, i) => (
                             <div
                                 key={i}
-                                className="flex-1 rounded-sm transition-all duration-300"
+                                className="flex-1 rounded-[2px] transition-all duration-300 relative group"
                                 style={{
                                     height: `${Math.max(e.score * 100, 8)}%`,
                                     backgroundColor: getEmotionColor(e.emotion),
-                                    opacity: 0.4 + (i / recentEmotions.length) * 0.6,
+                                    opacity: 0.5 + (i / recentEmotions.length) * 0.5,
                                 }}
-                                title={`${e.emotion} ${Math.round(e.score * 100)}%`}
-                            />
+                            >
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[9px] font-mono px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+                                    {e.emotion.toUpperCase()} {Math.round(e.score * 100)}%
+                                </div>
+                            </div>
                         ))}
                     </div>
-                    <div className="flex justify-between mt-1">
-                        <span className="text-[9px] text-zinc-600 font-mono">older</span>
-                        <span className="text-[9px] text-zinc-600 font-mono">now</span>
+                    <div className="flex justify-between mt-2">
+                        <span className="text-[9px] text-zinc-600 font-mono tracking-widest">T-20s</span>
+                        <span className="text-[9px] text-zinc-600 font-mono tracking-widest text-[#00ff88]">NOW</span>
                     </div>
                 </div>
             )}
 
             {/* Controls */}
-            <div className="flex gap-2">
-                <button
-                    onClick={onToggleSound}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-mono transition-all ${soundEnabled
-                            ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
-                            : "border-zinc-700 text-zinc-500 bg-zinc-800/60"
-                        }`}
-                >
-                    {soundEnabled ? "🔊 Sound ON" : "🔇 Sound OFF"}
-                </button>
+            <div className="flex gap-3 justify-end items-center mt-2 border-t border-white/5 pt-4">
                 {detectionPaused && (
-                    <span className="px-3 py-1.5 rounded-lg border border-yellow-500/50 text-yellow-400 bg-yellow-500/10 text-xs font-mono">
-                        ⏸ Paused (show fist to resume)
+                    <span className="px-4 py-2 rounded-xl border border-yellow-500/30 text-yellow-400 bg-yellow-500/10 text-[10px] font-mono uppercase tracking-widest font-bold shadow-[0_0_15px_rgba(250,204,21,0.2)] animate-pulse">
+                        System Paused
                     </span>
                 )}
+                <button
+                    onClick={onToggleSound}
+                    className={`px-4 py-2 rounded-xl border text-[10px] font-mono tracking-widest uppercase font-bold transition-all ${soundEnabled
+                            ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                            : "border-white/10 text-zinc-500 bg-white/5 hover:bg-white/10"
+                        }`}
+                >
+                    {soundEnabled ? "🔊 CHIME ON" : "🔇 CHIME OFF"}
+                </button>
             </div>
         </div>
     );
@@ -101,11 +105,11 @@ export default function Dashboard({
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
     return (
-        <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2 text-center">
-            <p className="text-2xl font-bold font-mono" style={{ color }}>
+        <div className="bg-white/5 border border-white/10 rounded-xl px-2 py-3 text-center transition-all hover:bg-white/10">
+            <p className="text-3xl font-bold font-mono tracking-tighter" style={{ color, textShadow: `0 0 15px ${color}40` }}>
                 {value}
             </p>
-            <p className="text-zinc-500 text-[10px] font-mono uppercase">{label}</p>
+            <p className="text-zinc-500 text-[9px] font-mono uppercase tracking-widest font-bold mt-1">{label}</p>
         </div>
     );
 }

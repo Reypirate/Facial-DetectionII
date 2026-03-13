@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import { playShutter, playCountdownBeep } from "@/utils/sounds";
 
 interface PhotoboothProps {
@@ -11,11 +11,11 @@ interface PhotoboothProps {
 type FrameStyle = "none" | "polaroid" | "vintage" | "neon" | "filmstrip";
 
 const FRAMES: { id: FrameStyle; label: string; emoji: string }[] = [
-    { id: "none", label: "No Frame", emoji: "🚫" },
-    { id: "polaroid", label: "Polaroid", emoji: "📷" },
-    { id: "vintage", label: "Vintage", emoji: "🎞️" },
-    { id: "neon", label: "Neon", emoji: "💡" },
-    { id: "filmstrip", label: "Film Strip", emoji: "🎬" },
+    { id: "none", label: "None", emoji: "🚫" },
+    { id: "polaroid", label: "Retro", emoji: "📷" },
+    { id: "vintage", label: "Sepia", emoji: "🎞️" },
+    { id: "neon", label: "Cyber", emoji: "💡" },
+    { id: "filmstrip", label: "Reel", emoji: "🎬" },
 ];
 
 export default function Photobooth({ videoRef, canvasRef }: PhotoboothProps) {
@@ -60,10 +60,10 @@ export default function Photobooth({ videoRef, canvasRef }: PhotoboothProps) {
 
     const startCountdown = useCallback(
         (onFinish: () => void) => {
-            setCountdown(3);
+            setCountdown(5);
             playCountdownBeep();
 
-            let count = 3;
+            let count = 5;
             const timer = setInterval(() => {
                 count--;
                 if (count > 0) {
@@ -166,32 +166,32 @@ export default function Photobooth({ videoRef, canvasRef }: PhotoboothProps) {
     const clearGallery = () => setPhotos([]);
 
     return (
-        <div className="w-full max-w-[640px] mt-4 space-y-3">
+        <div className="w-full space-y-4">
             {/* Flash overlay */}
             {flash && (
-                <div className="fixed inset-0 bg-white/80 z-50 pointer-events-none animate-pulse" />
+                <div className="fixed inset-0 bg-white/90 z-50 pointer-events-none animate-[flash_0.3s_ease-out]" />
             )}
 
             {/* Countdown overlay */}
             {countdown !== null && (
-                <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none">
-                    <span className="text-9xl font-black text-white drop-shadow-[0_0_40px_rgba(0,255,136,0.8)] animate-bounce">
+                <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none bg-black/20 backdrop-blur-sm">
+                    <span className="text-[12rem] font-black font-mono text-white drop-shadow-[0_0_50px_rgba(0,255,136,1)] animate-ping">
                         {countdown}
                     </span>
                 </div>
             )}
 
             {/* Frame selection */}
-            <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2">
-                <p className="text-zinc-500 text-[10px] font-mono uppercase mb-2">Frame Style</p>
-                <div className="flex gap-2">
+            <div>
+                <p className="text-zinc-500 text-[10px] font-mono uppercase mb-2 tracking-widest font-bold">Aesthetic Filter</p>
+                <div className="flex gap-2 bg-white/5 border border-white/10 p-1.5 rounded-xl overflow-x-auto no-scrollbar">
                     {FRAMES.map((f) => (
                         <button
                             key={f.id}
                             onClick={() => setSelectedFrame(f.id)}
-                            className={`flex-1 py-1.5 rounded-lg border text-xs font-mono transition-all ${selectedFrame === f.id
-                                ? "border-emerald-500 text-emerald-400 bg-emerald-500/10"
-                                : "border-zinc-700 text-zinc-500 hover:border-zinc-600"
+                            className={`flex-1 min-w-[80px] py-2 rounded-lg text-[10px] font-mono tracking-widest uppercase transition-all whitespace-nowrap font-bold ${selectedFrame === f.id
+                                ? "bg-emerald-500/20 text-emerald-400 shadow-[inset_0_0_10px_rgba(16,185,129,0.3)] border border-emerald-500/30"
+                                : "text-zinc-500 hover:text-zinc-300 border border-transparent hover:bg-white/5"
                                 }`}
                         >
                             {f.emoji} {f.label}
@@ -201,59 +201,60 @@ export default function Photobooth({ videoRef, canvasRef }: PhotoboothProps) {
             </div>
 
             {/* Capture buttons */}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
                 <button
                     onClick={handleSingleShot}
                     disabled={countdown !== null}
-                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-bold rounded-xl text-sm hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-4 bg-gradient-to-br from-emerald-500 via-emerald-600 to-cyan-600 hover:from-emerald-400 hover:via-emerald-500 hover:to-cyan-500 text-black font-black uppercase font-mono tracking-widest rounded-xl text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                 >
-                    📸 Single Shot
+                    📸 CAPTURE NODE
                 </button>
                 <button
                     onClick={handleStripShot}
                     disabled={countdown !== null || stripMode}
-                    className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-4 bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 hover:from-purple-400 hover:via-purple-500 hover:to-pink-500 text-white font-black uppercase font-mono tracking-widest rounded-xl text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(168,85,247,0.3)]"
                 >
-                    🎬 Photo Strip (4x)
+                    🎬 BURST SEQUENCE
                 </button>
             </div>
 
             {/* Strip progress */}
             {stripMode && (
-                <div className="bg-zinc-800/60 border border-purple-500/50 rounded-lg px-3 py-2">
-                    <p className="text-purple-400 font-mono text-sm">
-                        📷 Strip: {stripPhotos.length}/4 shots taken...
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full bg-purple-500 animate-ping" />
+                    <p className="text-purple-400 font-mono text-xs tracking-widest font-bold">
+                        BUFFERING: {stripPhotos.length}/4 FRAMES SECURED...
                     </p>
                 </div>
             )}
 
             {/* Gallery */}
             {photos.length > 0 && (
-                <div className="bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-3">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-zinc-500 text-[10px] font-mono uppercase">
-                            Gallery ({photos.length})
+                <div className="pt-4 border-t border-white/5">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-widest font-bold">
+                            Local Memory Buffer ({photos.length})
                         </p>
                         <button
                             onClick={clearGallery}
-                            className="text-xs text-red-400 hover:text-red-300 font-mono"
+                            className="text-[10px] text-red-500 bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-lg uppercase tracking-widest font-mono font-bold transition-all"
                         >
-                            🗑️ Clear
+                            FORMAT DISK
                         </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                         {photos.map((photo, i) => (
-                            <div key={i} className="relative group cursor-pointer">
+                            <div key={i} className="relative group cursor-pointer aspect-square bg-black rounded-lg overflow-hidden border border-white/10 hover:border-emerald-500/50 transition-all">
                                 <img
                                     src={photo}
                                     alt={`Photo ${i + 1}`}
-                                    className="w-full rounded-lg border border-zinc-700 hover:border-emerald-500 transition-all"
+                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all group-hover:scale-110"
                                 />
                                 <button
                                     onClick={() => downloadPhoto(photo, i)}
-                                    className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-all font-mono"
+                                    className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[10px] uppercase font-bold tracking-widest opacity-0 group-hover:opacity-100 transition-all font-mono"
                                 >
-                                    ⬇️ Save
+                                    💾 SAVE
                                 </button>
                             </div>
                         ))}
@@ -261,11 +262,9 @@ export default function Photobooth({ videoRef, canvasRef }: PhotoboothProps) {
                 </div>
             )}
 
-            <canvas ref={captureCanvasRef} className="hidden" />
-
             {/* Gesture hint */}
-            <p className="text-zinc-600 text-[10px] font-mono text-center">
-                💡 Tip: Show 👍 Thumbs Up gesture to auto-capture a photo!
+            <p className="text-zinc-600 text-[9px] font-mono tracking-widest uppercase font-bold text-center mt-2">
+                SYSTEM TIP: FORM 👍 <span className="text-emerald-500 border border-emerald-500/20 bg-emerald-500/10 px-1 rounded">THUMBS UP</span> GESTURE TO AUTO-TRIGGER CAPTURE
             </p>
         </div>
     );
