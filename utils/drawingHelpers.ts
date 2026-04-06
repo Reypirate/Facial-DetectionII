@@ -126,10 +126,11 @@ export function drawHandSkeleton(
     });
 }
 
-// Soft colors for detection labels
+// Vibrant, high-contrast detection label colors
 export const COLORS = {
-    face: "#B5C4B1",    // Sage green
-    hand: "#A8C4D9",    // Soft sky blue
-    object: "#E8C4A8",  // Warm peach
-    pose: "#C4B5D4",    // Lavender
+    face: "#34d399",    // Emerald
+    hand: "#60a5fa",    // Blue
+    object: "#fbbf24",  // Amber
+    pose: "#a78bfa",    // Violet
 };
+

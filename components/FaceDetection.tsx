@@ -37,7 +37,7 @@ function saveFaceToDB(name: string, descriptor: Float32Array) {
 }
 
 // ─── Tabs ───────────────────────────────────────────────────────────────
-type TabId = "detection" | "register" | "soundboard";
+type TabId = "detection" | "soundboard" | "register";
 
 export default function FaceDetection() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -76,7 +76,6 @@ export default function FaceDetection() {
         topGesture,
         emotionHistory,
         lastDescriptorRef,
-        hasBlinked,
     } = useDetection({
         videoRef,
         canvasRef,
@@ -91,7 +90,8 @@ export default function FaceDetection() {
         activeTab
     });
 
-    const isRegistrationReady = lastDescriptorRef.current !== null && registerName.trim().length > 0 && hasBlinked;
+    // No blink check — just face + name
+    const isRegistrationReady = lastDescriptorRef.current !== null && registerName.trim().length > 0;
 
     const handleRegisterFace = () => {
         if (!registerName.trim()) {
@@ -127,41 +127,42 @@ export default function FaceDetection() {
 
     const areAllModelsLoading = cameraReady && (!faceModelsReady || !handModelsReady || !objectModelReady);
     
-    // Soft border states
-    let videoBorderClass = "border-warm-300/40";
+    // Clean border states
+    let videoBorderClass = "border-slate-200";
     if (activeTab === "register") {
         videoBorderClass = isRegistrationReady 
-            ? "border-emerald-300 shadow-sm" 
-            : "border-rose-200 shadow-sm";
+            ? "border-emerald-400 shadow-md" 
+            : "border-rose-300 shadow-md";
     } else if (activeTab === "soundboard") {
-        videoBorderClass = "border-soft-lavender/60 shadow-sm";
+        videoBorderClass = "border-indigo-300 shadow-md";
     }
 
+    // Tab order: Detection → Whisper Board → Register
     const TABS: { id: TabId; label: string; icon: string }[] = [
         { id: "detection", label: "Detection", icon: "👁" },
-        { id: "register", label: "Register", icon: "✎" },
         { id: "soundboard", label: "Whisper Board", icon: "♪" },
+        { id: "register", label: "Register", icon: "✎" },
     ];
 
     if (cameraError) {
         return (
             <div className={cn(
                 "flex flex-col items-center justify-center w-full max-w-[800px] aspect-[4/3]",
-                "bg-white rounded-2xl border border-warm-300/50 text-center",
-                "p-8 shadow-sm"
+                "bg-white rounded-2xl border border-slate-200 text-center",
+                "p-8 shadow-lg"
             )}>
-                <div className="w-16 h-16 bg-cream-100 rounded-full flex items-center justify-center mb-5">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-5">
                     <p className="text-3xl">📷</p>
                 </div>
-                <h2 className="text-slate-700 font-medium mb-2 text-lg">Camera Access Needed</h2>
-                <p className="text-warm-400 text-sm mb-6 max-w-sm leading-relaxed">
+                <h2 className="text-slate-900 font-semibold mb-2 text-lg">Camera Access Needed</h2>
+                <p className="text-slate-500 text-sm mb-6 max-w-sm leading-relaxed">
                     Please allow camera access so we can detect faces and hands.
                 </p>
                 <button
                     onClick={retryCamera}
                     className={cn(
-                        "px-6 py-2.5 bg-slate-700 text-white rounded-xl",
-                        "hover:bg-slate-600 transition-all text-sm font-medium shadow-sm"
+                        "px-6 py-2.5 bg-indigo-600 text-white rounded-xl",
+                        "hover:bg-indigo-500 transition-all text-sm font-medium shadow-sm"
                     )}
                 >
                     Try Again
@@ -176,10 +177,10 @@ export default function FaceDetection() {
             return (
                 <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                     </span>
-                    <span className="text-warm-500 text-[10px] font-medium tracking-wider">Connecting...</span>
+                    <span className="text-slate-500 text-[10px] font-medium tracking-wider">Connecting...</span>
                 </div>
             );
         }
@@ -187,20 +188,20 @@ export default function FaceDetection() {
             return (
                 <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                     </span>
-                    <span className="text-warm-500 text-[10px] font-medium tracking-wider">Loading models...</span>
+                    <span className="text-slate-500 text-[10px] font-medium tracking-wider">Loading models...</span>
                 </div>
             );
         }
         return (
             <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="text-warm-500 text-[10px] font-medium tracking-wider">Ready</span>
+                <span className="text-slate-600 text-[10px] font-medium tracking-wider">Ready</span>
             </div>
         );
     };
@@ -220,7 +221,7 @@ export default function FaceDetection() {
             {/* Main Stage */}
             <div className={cn(
                 "relative w-full max-w-[800px] aspect-[4/3] rounded-2xl overflow-hidden",
-                "border shadow-sm transition-all duration-500 bg-cream-50",
+                "border-2 shadow-lg transition-all duration-500 bg-slate-50",
                 videoBorderClass
             )}>
                 
@@ -244,7 +245,7 @@ export default function FaceDetection() {
                 {/* Top Nav */}
                 <div className="absolute top-3 inset-x-3 z-30 flex justify-between items-start pointer-events-none">
                     {/* Tab Bar */}
-                    <div className="pointer-events-auto bg-white/80 backdrop-blur-md border border-warm-300/30 rounded-xl p-1 flex gap-0.5 shadow-sm">
+                    <div className="pointer-events-auto bg-white/90 backdrop-blur-md border border-slate-200 rounded-xl p-1 flex gap-0.5 shadow-md">
                         {TABS.map((tab) => (
                             <button
                                 key={tab.id}
@@ -252,8 +253,8 @@ export default function FaceDetection() {
                                 className={cn(
                                     "px-3 py-1.5 rounded-lg text-[11px] transition-all font-medium tracking-wide",
                                     activeTab === tab.id
-                                        ? "bg-slate-700 text-white shadow-sm"
-                                        : "text-warm-500 hover:text-slate-600 hover:bg-cream-100"
+                                        ? "bg-indigo-600 text-white shadow-sm"
+                                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                                 )}
                             >
                                 {tab.icon} <span className="hidden sm:inline-block ml-0.5">{tab.label}</span>
@@ -262,36 +263,30 @@ export default function FaceDetection() {
                     </div>
 
                     {/* Status Pill */}
-                    <div className="pointer-events-auto bg-white/80 backdrop-blur-md border border-warm-300/30 rounded-full px-3 py-1.5 shadow-sm">
+                    <div className="pointer-events-auto bg-white/90 backdrop-blur-md border border-slate-200 rounded-full px-3 py-1.5 shadow-md">
                         {renderStatusIndicator()}
                     </div>
                 </div>
 
                 {/* Center Loading State */}
                 {areAllModelsLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-white/60 backdrop-blur-sm pointer-events-none">
-                        <div className={cn(
-                            "w-12 h-12 border-2 border-warm-300/30 border-t-warm-500",
-                            "rounded-full animate-spin mb-4"
-                        )} />
-                        <p className="text-warm-400 text-xs font-medium tracking-wider">Loading models...</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-white/70 backdrop-blur-sm pointer-events-none">
+                        <div className="w-12 h-12 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+                        <p className="text-slate-500 text-xs font-medium tracking-wider">Loading models...</p>
                     </div>
                 )}
                 
                 {/* Paused Overlay */}
                 {detectionPaused && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-20 pointer-events-none">
-                        <span className="text-2xl font-medium text-slate-600 tracking-wide">Paused</span>
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-20 pointer-events-none">
+                        <span className="text-2xl font-semibold text-slate-700 tracking-wide">Paused</span>
                     </div>
                 )}
             </div>
 
             {/* Panel Below Video */}
             <div className="w-full max-w-[800px] mt-4 flex flex-col items-center justify-end z-30">
-                <div className={cn(
-                    "w-full overflow-y-auto no-scrollbar rounded-2xl bg-cream-50",
-                    "border border-warm-300/30 shadow-sm transition-all p-5"
-                )}>
+                <div className="w-full overflow-y-auto no-scrollbar rounded-2xl bg-white border border-slate-200 shadow-md transition-all p-5">
                     
                     {activeTab === "detection" && (
                         <Dashboard
@@ -308,50 +303,37 @@ export default function FaceDetection() {
                         />
                     )}
 
-                    {activeTab === "register" && (
-                        <RegisterTab
-                            registerName={registerName}
-                            setRegisterName={setRegisterName}
-                            registerStatus={registerStatus}
-                            savedFaces={savedFaces}
-                            hasBlinked={hasBlinked}
-                            isRegistrationReady={isRegistrationReady}
-                            onRegister={handleRegisterFace}
-                            onDeleteFace={handleDeleteFace}
-                        />
-                    )}
-
                     {activeTab === "soundboard" && (
                         <div className="space-y-4">
                             <div>
-                                <p className="text-warm-500 text-[10px] font-medium uppercase mb-1 tracking-widest">Whisper Board</p>
-                                <p className="text-warm-400 text-xs leading-relaxed">
-                                    Curl your fingers to trigger words. Pinch your thumb and index finger together for &ldquo;that&rdquo;.
+                                <p className="text-slate-400 text-[10px] font-semibold uppercase mb-1 tracking-widest">Whisper Board</p>
+                                <p className="text-slate-500 text-xs leading-relaxed">
+                                    Words hover over your fingertips. Curl a finger to trigger its word. Pinch thumb &amp; index for &ldquo;that&rdquo;.
                                 </p>
                             </div>
                             
                             <div className="grid grid-cols-5 gap-2">
                                 {[
-                                    { word: "I", finger: "Index", color: "bg-warm-300/40" },
-                                    { word: "love", finger: "Middle", color: "bg-soft-rose/30" },
-                                    { word: "you", finger: "Ring", color: "bg-soft-sky/30" },
-                                    { word: "hate", finger: "Pinky", color: "bg-soft-peach/30" },
-                                    { word: "that", finger: "Pinch", color: "bg-soft-lavender/30" },
+                                    { word: "I", finger: "Index", color: "bg-slate-100 border-slate-200" },
+                                    { word: "love", finger: "Middle", color: "bg-rose-50 border-rose-200" },
+                                    { word: "you", finger: "Ring", color: "bg-blue-50 border-blue-200" },
+                                    { word: "hate", finger: "Pinky", color: "bg-orange-50 border-orange-200" },
+                                    { word: "that", finger: "Pinch", color: "bg-violet-50 border-violet-200" },
                                 ].map(({ word, finger, color }) => (
                                     <div key={word} className={cn(
-                                        "rounded-xl p-3 text-center border border-warm-300/20 transition-all",
+                                        "rounded-xl p-3 text-center border transition-all",
                                         color
                                     )}>
-                                        <p className="text-slate-700 text-lg font-medium">{word}</p>
-                                        <p className="text-warm-400 text-[9px] uppercase tracking-widest mt-1">{finger}</p>
+                                        <p className="text-slate-800 text-lg font-semibold">{word}</p>
+                                        <p className="text-slate-400 text-[9px] uppercase tracking-widest mt-1 font-medium">{finger}</p>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="bg-white border border-warm-300/30 rounded-xl px-4 py-3">
-                                <p className="text-warm-400 text-[10px] font-medium uppercase mb-2 tracking-widest">Current Output</p>
-                                <p className="text-slate-700 text-base font-medium min-h-[1.5em]">
-                                    {topGesture || <span className="text-warm-300 italic">listening...</span>}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                                <p className="text-slate-400 text-[10px] font-semibold uppercase mb-2 tracking-widest">Output</p>
+                                <p className="text-slate-800 text-base font-semibold min-h-[1.5em]">
+                                    {topGesture || <span className="text-slate-300 italic font-normal">listening...</span>}
                                 </p>
                             </div>
 
@@ -359,10 +341,10 @@ export default function FaceDetection() {
                                 <button
                                     onClick={handleToggleSound}
                                     className={cn(
-                                        "px-4 py-2 rounded-xl border text-[10px] tracking-widest uppercase font-medium transition-all",
+                                        "px-4 py-2 rounded-xl border text-[10px] tracking-widest uppercase font-semibold transition-all",
                                         soundEnabled
-                                            ? "border-soft-sage text-emerald-700 bg-emerald-50/50"
-                                            : "border-warm-300/50 text-warm-400 bg-white hover:bg-cream-100"
+                                            ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                                            : "border-slate-200 text-slate-400 bg-white hover:bg-slate-50"
                                     )}
                                 >
                                     {soundEnabled ? "🔊 Sound On" : "🔇 Sound Off"}
@@ -370,19 +352,31 @@ export default function FaceDetection() {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === "register" && (
+                        <RegisterTab
+                            registerName={registerName}
+                            setRegisterName={setRegisterName}
+                            registerStatus={registerStatus}
+                            savedFaces={savedFaces}
+                            isRegistrationReady={isRegistrationReady}
+                            onRegister={handleRegisterFace}
+                            onDeleteFace={handleDeleteFace}
+                        />
+                    )}
                 </div>
             </div>
 
             {/* Legend */}
-            <div className="mt-4 flex gap-5 px-5 py-2.5 bg-white/80 backdrop-blur-sm rounded-full border border-warm-300/20 text-[9px] tracking-widest uppercase font-medium text-warm-400 shadow-sm">
+            <div className="mt-4 flex gap-5 px-5 py-2.5 bg-white rounded-full border border-slate-200 text-[9px] tracking-widest uppercase font-semibold text-slate-400 shadow-sm">
                 <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#B5C4B1" }} /> Faces
+                    <span className="w-2 h-2 rounded-sm bg-emerald-400" /> Faces
                 </span>
                 <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#A8C4D9" }} /> Hands
+                    <span className="w-2 h-2 rounded-sm bg-blue-400" /> Hands
                 </span>
                 <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: "#E8C4A8" }} /> Objects
+                    <span className="w-2 h-2 rounded-sm bg-amber-400" /> Objects
                 </span>
             </div>
         </div>

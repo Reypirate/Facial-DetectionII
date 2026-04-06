@@ -4,14 +4,6 @@ import { getSoundboardGestures } from "@/utils/gestureClassifier";
 import { drawLabeledBox, drawHandSkeleton, getHandBoundingBox, COLORS } from "@/utils/drawingHelpers";
 import { playWord, initSoundboard } from "@/utils/sounds";
 
-// ─── Liveness Detection (EAR) Helper ────────────────────────────────────
-function calculateEAR(eyeLandmarks: any[]) {
-    const v1 = Math.hypot(eyeLandmarks[1].x - eyeLandmarks[5].x, eyeLandmarks[1].y - eyeLandmarks[5].y);
-    const v2 = Math.hypot(eyeLandmarks[2].x - eyeLandmarks[4].x, eyeLandmarks[2].y - eyeLandmarks[4].y);
-    const h = Math.hypot(eyeLandmarks[0].x - eyeLandmarks[3].x, eyeLandmarks[0].y - eyeLandmarks[3].y);
-    return (v1 + v2) / (2.0 * h);
-}
-
 // ─── Face Matching helper ───────────────────────────────────────────────
 function matchFace(descriptor: Float32Array, saved: SavedFace[]): string | null {
     if (saved.length === 0) return null;
@@ -31,37 +23,59 @@ function matchFace(descriptor: Float32Array, saved: SavedFace[]): string | null 
     return bestMatch;
 }
 
-// ─── Draw soft floating word at a position ──────────────────────────────
+// ─── Draw whisper word at a position ────────────────────────────────────
+// `active` = true when the finger is currently bent / pinching
 function drawWhisperWord(
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
     word: string,
-    color: string
+    color: string,
+    active: boolean
 ) {
     const textY = y - 28;
 
     ctx.save();
 
-    // Soft shadow text
-    ctx.font = "500 24px 'Inter', sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = color;
-    ctx.fillText(word, x, textY);
+    if (active) {
+        // Triggered state: larger, fully opaque, slight pop
+        ctx.font = "600 30px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = color;
+        ctx.fillText(word, x, textY);
 
-    // Subtle circle indicator at the fingertip
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.globalAlpha = 0.3;
-    ctx.beginPath();
-    ctx.arc(x, y, 10, 0, 2 * Math.PI);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+        // Bright ring at fingertip
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, 2 * Math.PI);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+    } else {
+        // Resting state: smaller, semi-transparent, always visible
+        ctx.font = "500 22px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "rgba(60, 60, 75, 0.45)";
+        ctx.fillText(word, x, textY);
+
+        // Faint dot at fingertip
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+        ctx.strokeStyle = "rgba(60, 60, 75, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
 
     ctx.restore();
 }
@@ -103,11 +117,9 @@ export function useDetection({
         { time: number; emotion: string; score: number }[]
     >([]);
     
-    const [hasBlinked, setHasBlinked] = useState(false);
     const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
     const [isPinching, setIsPinching] = useState(false);
 
-    const livenessRef = useRef(false);
     const pinchCooldownRef = useRef(0);
     const lastDescriptorRef = useRef<Float32Array | null>(null);
     const frameCountRef = useRef(0);
@@ -202,7 +214,7 @@ export function useDetection({
             lastFpsTime.current = now;
         }
 
-        // 3. Draw Faces
+        // 3. Draw Faces (no blink/liveness check)
         if (faceModelsReady && faceDets) {
             const fa = (window as any).faceapi;
             const resized = fa.resizeResults(faceDets, { width: w, height: h });
@@ -210,28 +222,11 @@ export function useDetection({
 
             if (resized.length === 0) {
                 lastDescriptorRef.current = null;
-                if (livenessRef.current) {
-                    livenessRef.current = false;
-                    setHasBlinked(false);
-                }
             }
 
             resized.forEach((det: any) => {
                 const box = det.detection.box;
                 const conf = Math.round(det.detection.score * 100);
-
-                const landmarks = det.landmarks;
-                if (landmarks && !livenessRef.current) {
-                    const leftEye = landmarks.getLeftEye();
-                    const rightEye = landmarks.getRightEye();
-                    const leftEAR = calculateEAR(leftEye);
-                    const rightEAR = calculateEAR(rightEye);
-                    const avgEAR = (leftEAR + rightEAR) / 2.0;
-                    if (avgEAR < 0.2) {
-                        livenessRef.current = true;
-                        setHasBlinked(true);
-                    }
-                }
 
                 let label = `Person ${conf}%`;
                 if (det.descriptor) {
@@ -278,45 +273,46 @@ export function useDetection({
                 const handedness = results.multiHandedness?.[idx]?.label || "Hand";
                 const box = getHandBoundingBox(landmarks, w, h);
 
-                // ─── Whisper Board mode (only when tab is active) ───
+                // ─── Whisper Board mode ───
                 if (currentTab === "soundboard") {
                     const gestures = getSoundboardGestures(landmarks);
                     const fingerNames: FingerName[] = ["index", "middle", "ring", "pinky"];
                     const activeWords: string[] = [];
 
-                    // Check each finger
+                    // Draw ALL finger words every frame, trigger audio only on edge
                     for (const finger of fingerNames) {
                         const state = gestures[finger];
                         const word = FINGER_TO_WORD[finger];
                         const config = WORD_CONFIG[word];
                         const wasDown = prevGestureRef.current[finger];
 
+                        const tipPx = state.tipX * w;
+                        const tipPy = state.tipY * h;
+
                         if (state.isDown) {
                             activeWords.push(word);
-
                             // Edge-triggered audio: only on transition up→down
                             if (!wasDown) {
                                 playWord(word);
                             }
-
-                            // Draw soft floating word
-                            const tipPx = state.tipX * w;
-                            const tipPy = state.tipY * h;
-                            drawWhisperWord(ctx, tipPx, tipPy, word, config.color);
                         }
+
+                        // ALWAYS draw the word — active=true gives visual emphasis
+                        drawWhisperWord(ctx, tipPx, tipPy, word, config.color, state.isDown);
                     }
 
-                    // Check pinch → "that"
+                    // Pinch → "that" — always draw at thumb/index midpoint
                     const wasPinching = prevGestureRef.current.pinch;
+                    const midPx = gestures.pinch.midX * w;
+                    const midPy = gestures.pinch.midY * h;
+
                     if (gestures.pinch.isPinching) {
                         activeWords.push("that");
                         if (!wasPinching) {
                             playWord("that");
                         }
-                        const midPx = gestures.pinch.midX * w;
-                        const midPy = gestures.pinch.midY * h;
-                        drawWhisperWord(ctx, midPx, midPy, "that", WORD_CONFIG["that"].color);
                     }
+                    drawWhisperWord(ctx, midPx, midPy, "that", WORD_CONFIG["that"].color, gestures.pinch.isPinching);
 
                     // Update previous state
                     prevGestureRef.current = {
@@ -329,12 +325,11 @@ export function useDetection({
 
                     const gestureText = activeWords.length > 0
                         ? activeWords.join(" ")
-                        : "listening...";
+                        : "";
                     setTopGesture(gestureText);
 
-                    drawLabeledBox(ctx, box, gestureText, COLORS.hand, `${handedness}`);
+                    drawLabeledBox(ctx, box, gestureText || "ready", COLORS.hand, `${handedness}`);
                 } else {
-                    // Non-soundboard: just draw skeleton + bounding box
                     drawLabeledBox(ctx, box, "Hand detected", COLORS.hand, `${handedness}`);
                 }
 
@@ -351,7 +346,7 @@ export function useDetection({
 
                     ctx.beginPath();
                     ctx.arc(pX, pY, 6, 0, 2 * Math.PI);
-                    ctx.fillStyle = "rgba(168, 152, 136, 0.5)";
+                    ctx.fillStyle = "rgba(100, 100, 120, 0.4)";
                     ctx.fill();
 
                     const pinchDist = Math.hypot(pX - thumbTip.x * w, pY - thumbTip.y * h);
@@ -360,7 +355,7 @@ export function useDetection({
                         setIsPinching(true);
                         ctx.beginPath();
                         ctx.arc(pX, pY, 12, 0, 2 * Math.PI);
-                        ctx.strokeStyle = "rgba(185, 140, 148, 0.6)";
+                        ctx.strokeStyle = "rgba(99, 102, 241, 0.5)";
                         ctx.lineWidth = 2;
                         ctx.stroke();
 
@@ -441,7 +436,6 @@ export function useDetection({
         topGesture,
         emotionHistory,
         lastDescriptorRef,
-        hasBlinked,
         cursorPos,
         isPinching
     };
