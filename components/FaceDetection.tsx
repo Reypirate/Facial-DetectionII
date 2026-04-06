@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { registerGestureAction } from "@/utils/gestureActions";
 import { toggleSounds } from "@/utils/sounds";
 import { cn } from "@/utils/cn";
 import Dashboard from "./Dashboard";
-import Photobooth from "./Photobooth";
 import { useCamera } from "@/hooks/useCamera";
 import { useAIModels } from "@/hooks/useAIModels";
 import { useDetection } from "@/hooks/useDetection";
@@ -39,7 +38,7 @@ function saveFaceToDB(name: string, descriptor: Float32Array) {
 }
 
 // ─── Tabs ───────────────────────────────────────────────────────────────
-type TabId = "detection" | "photobooth" | "register";
+type TabId = "detection" | "register";
 
 export default function FaceDetection() {
     // 1. Core Detection Canvas
@@ -107,16 +106,16 @@ export default function FaceDetection() {
 
     const handleRegisterFace = () => {
         if (!registerName.trim()) {
-            setRegisterStatus("⚠️ Enter a name first!");
+            setRegisterStatus("⚠️ Unknown identity flag. Need alias.");
             return;
         }
         if (!lastDescriptorRef.current) {
-            setRegisterStatus("⚠️ No face detected. Look at the camera!");
+            setRegisterStatus("⚠️ Core not synced. Look at the lens.");
             return;
         }
         saveFaceToDB(registerName.trim(), lastDescriptorRef.current);
         setSavedFaces(loadSavedFaces());
-        setRegisterStatus(`✅ "${registerName}" registered!`);
+        setRegisterStatus(`✅ Identity Enrolled: [${registerName}]`);
         setRegisterName("");
         setTimeout(() => setRegisterStatus(""), 3000);
     };
@@ -140,32 +139,31 @@ export default function FaceDetection() {
     const areAllModelsLoading = cameraReady && (!faceModelsReady || !handModelsReady || !objectModelReady);
     
     // Dynamic border for recording tab
-    let videoBorderClass = "border-white/10";
+    let videoBorderClass = "border-mana-500/20";
     if (activeTab === "register") {
         videoBorderClass = isRegistrationReady 
-            ? "border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.3)]" 
+            ? "border-mana-500 shadow-[0_0_30px_rgba(16,185,129,0.3)]" 
             : "border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]";
     }
 
     const TABS: { id: TabId; label: string; emoji: string }[] = [
-        { id: "detection", label: "Detection", emoji: "🔍" },
-        { id: "photobooth", label: "Photobooth", emoji: "📸" },
-        { id: "register", label: "Faces", emoji: "🏷️" },
+        { id: "detection", label: "Detection Matrix", emoji: "🔍" },
+        { id: "register", label: "Registry Hub", emoji: "🏷️" },
     ];
 
     if (cameraError) {
         return (
             <div className={cn(
                 "flex flex-col items-center justify-center w-full max-w-[800px] aspect-[4/3]",
-                "bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-red-500/30 text-center",
+                "bg-forest-800/80 backdrop-blur-xl rounded-2xl border border-red-500/30 text-center",
                 "p-6 shadow-[0_0_50px_rgba(239,68,68,0.1)]"
             )}>
                 <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
                     <p className="text-4xl animate-bounce">📷</p>
                 </div>
-                <h2 className="text-red-400 font-bold mb-3 font-mono text-xl tracking-tight">Camera Permission Denied</h2>
-                <p className="text-zinc-400 text-sm mb-8 max-w-sm leading-relaxed">
-                    AI Vision Studio requires camera access to process local models. Please allow permissions in your browser.
+                <h2 className="text-red-400 font-bold mb-3 font-mono text-xl tracking-tight">Lens Access Revoked</h2>
+                <p className="text-elven-400 text-sm mb-8 max-w-sm leading-relaxed">
+                    The Arcane Core requires visual feed access to process models. Grant permission to restore connection.
                 </p>
                 <button
                     onClick={retryCamera}
@@ -174,7 +172,7 @@ export default function FaceDetection() {
                         "hover:bg-red-500/20 transition-all font-mono text-sm uppercase tracking-widest font-bold"
                     )}
                 >
-                    Retry Connection
+                    Recalibrate Lens
                 </button>
             </div>
         );
@@ -189,7 +187,7 @@ export default function FaceDetection() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
                     </span>
-                    <span className="text-yellow-400 font-mono text-xs font-bold tracking-wider">CAMERA BOOT</span>
+                    <span className="text-yellow-400 font-mono text-xs font-bold tracking-wider">SYNCING LENS</span>
                 </div>
             );
         }
@@ -200,17 +198,17 @@ export default function FaceDetection() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
                     </span>
-                    <span className="text-yellow-400 font-mono text-xs font-bold tracking-wider">LOADING AI CORE</span>
+                    <span className="text-yellow-400 font-mono text-xs font-bold tracking-wider">CHARGING RUNES</span>
                 </div>
             );
         }
         return (
             <div className="flex items-center gap-3">
                 <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mana-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-mana-500"></span>
                 </span>
-                <span className="text-emerald-400 font-mono text-xs font-bold tracking-wider">SYSTEM ACTIVE</span>
+                <span className="text-mana-400 font-mono text-xs font-bold tracking-wider">MATRIX ACTIVE</span>
             </div>
         );
     };
@@ -230,39 +228,40 @@ export default function FaceDetection() {
             {/* Main Stage */}
             <div className={cn(
                 "relative w-full max-w-[800px] aspect-[4/3] rounded-2xl overflow-hidden",
-                "border shadow-2xl transition-all duration-500 bg-black",
+                "border shadow-2xl transition-all duration-500 bg-forest-900",
                 videoBorderClass
             )}>
                 
                 {/* Raw Video Feed */}
                 <video
                     ref={videoRef}
+                    autoPlay
                     muted
                     playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{ transform: "scaleX(-1)" }}
+                    className="absolute inset-0 w-full h-full object-cover opacity-90"
+                    style={{ transform: "scaleX(-1)", filter: "contrast(1.05) brightness(0.9)" }}
                 />
 
                 {/* Layer 2: Detection Bounding Boxes and Logic */}
                 <canvas
                     ref={canvasRef}
-                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]"
                     style={{ transform: "scaleX(-1)" }}
                 />
 
                 {/* Top Nav (Hovering) */}
                 <div className="absolute top-4 inset-x-4 z-30 flex justify-between items-start pointer-events-none">
                     {/* Tab Bar */}
-                    <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-1 flex gap-1 shadow-lg">
+                    <div className="pointer-events-auto bg-forest-900/60 backdrop-blur-md border border-mana-500/20 rounded-xl p-1 flex gap-1 shadow-lg">
                         {TABS.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={cn(
-                                    "px-4 py-2 rounded-lg text-xs font-mono transition-all font-bold",
+                                    "px-4 py-2 rounded-lg text-[11px] font-mono transition-all font-bold tracking-widest",
                                     activeTab === tab.id
-                                        ? "bg-emerald-500/20 text-emerald-400 shadow-[inset_0_0_10px_rgba(16,185,129,0.2)]"
-                                        : "text-zinc-500 hover:text-zinc-300"
+                                        ? "bg-mana-500/20 text-mana-400 shadow-[inset_0_0_15px_rgba(16,185,129,0.3)] border border-mana-500/30"
+                                        : "text-elven-500 hover:text-elven-300 border border-transparent"
                                 )}
                             >
                                 {tab.emoji} <span className="hidden sm:inline-block ml-1">{tab.label}</span>
@@ -271,38 +270,38 @@ export default function FaceDetection() {
                     </div>
 
                     {/* Status Pill */}
-                    <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-2.5 shadow-lg">
+                    <div className="pointer-events-auto bg-forest-900/60 backdrop-blur-md border border-mana-500/20 rounded-full px-4 py-2.5 shadow-lg">
                         {renderStatusIndicator()}
                     </div>
                 </div>
 
                 {/* Center Loading State */}
                 {areAllModelsLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/60 backdrop-blur-sm pointer-events-none">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-forest-900/60 backdrop-blur-sm pointer-events-none">
                         <div className={cn(
-                            "w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500",
-                            "rounded-full animate-spin mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                            "w-16 h-16 border-4 border-mana-500/20 border-t-mana-500",
+                            "rounded-full animate-spin mb-6 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                         )} />
                     </div>
                 )}
 
                 {/* Scan line effect */}
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="w-full h-1 bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent animate-pulse" />
+                <div className="absolute inset-0 pointer-events-none mix-blend-overlay">
+                    <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-mana-500/50 to-transparent animate-pulse" />
                 </div>
                 
                 {/* Paused Overlay */}
                 {detectionPaused && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-20 pointer-events-none">
-                        <span className="text-4xl font-bold font-mono text-yellow-400 tracking-widest drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]">PAUSED</span>
+                    <div className="absolute inset-0 bg-forest-900/40 backdrop-blur-sm flex items-center justify-center z-20 pointer-events-none">
+                        <span className="text-4xl font-bold font-mono text-mana-400 tracking-widest drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">FREEZE FRAME</span>
                     </div>
                 )}
             </div>
 
             <div className="w-full max-w-[800px] mt-4 flex flex-col items-center justify-end z-30">
                 <div className={cn(
-                    "w-full overflow-y-auto no-scrollbar rounded-2xl bg-black/40",
-                    "backdrop-blur-xl border border-white/10 shadow-lg transition-all p-5"
+                    "w-full overflow-y-auto no-scrollbar rounded-2xl bg-forest-800/80",
+                    "backdrop-blur-xl border border-mana-500/20 shadow-lg transition-all p-5"
                 )}>
                     
                     {activeTab === "detection" && (
@@ -318,10 +317,6 @@ export default function FaceDetection() {
                                 onToggleSound={handleToggleSound}
                                 detectionPaused={detectionPaused}
                             />
-                        )}
-
-                        {activeTab === "photobooth" && (
-                            <Photobooth videoRef={videoRef} canvasRef={canvasRef} />
                         )}
 
                         {activeTab === "register" && (
@@ -340,15 +335,15 @@ export default function FaceDetection() {
                 </div>
 
             {/* Legend Below the controls */}
-            <div className="mt-4 flex gap-6 px-4 py-2 bg-black/30 backdrop-blur-md rounded-full border border-white/5 text-[10px] font-mono tracking-widest uppercase font-bold text-zinc-500">
-                <span className="flex items-center gap-2 transition-colors hover:text-emerald-400">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#00ff88]" /> Face Net
+            <div className="mt-4 flex gap-6 px-5 py-3 bg-forest-800/60 backdrop-blur-md rounded-full border border-mana-500/20 text-[10px] font-mono tracking-widest uppercase font-bold text-elven-500 shadow-md">
+                <span className="flex items-center gap-2 transition-colors hover:text-mana-400">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-mana-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" /> Face Matrix
                 </span>
                 <span className="flex items-center gap-2 transition-colors hover:text-cyan-400">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#00bbff]" /> Gesture Net
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#00bbff] shadow-[0_0_10px_rgba(0,187,255,0.5)]" /> Gesture Matrix
                 </span>
                 <span className="flex items-center gap-2 transition-colors hover:text-orange-400">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#ff9f43]" /> Object Net
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#ff9f43] shadow-[0_0_10px_rgba(255,159,67,0.5)]" /> Object Matrix
                 </span>
             </div>
         </div>
